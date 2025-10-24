@@ -19,7 +19,7 @@ export default function Quest() {
       id: 1,
       title: 'First Prediction',
       description: 'Make your first prediction on any market',
-      reward: '10 BNB',
+      reward: '10 PEW',
       progress: 100,
       completed: true,
     },
@@ -27,15 +27,15 @@ export default function Quest() {
       id: 2,
       title: 'Hot Streak',
       description: 'Win 5 predictions in a row',
-      reward: '25 BNB',
+      reward: '25 PEW',
       progress: 60,
       completed: false,
     },
     {
       id: 3,
       title: 'Volume Trader',
-      description: 'Trade a total volume of 100 BNB',
-      reward: '50 BNB',
+      description: 'Trade a total volume of 100 PEW',
+      reward: '50 PEW',
       progress: 45,
       completed: false,
     },
@@ -43,7 +43,7 @@ export default function Quest() {
       id: 4,
       title: 'Early Adopter',
       description: 'Connect wallet and explore all features',
-      reward: '5 BNB',
+      reward: '5 PEW',
       progress: 100,
       completed: true,
     },
@@ -51,7 +51,7 @@ export default function Quest() {
       id: 5,
       title: 'Market Master',
       description: 'Predict on 50 different markets',
-      reward: '100 BNB',
+      reward: '100 PEW',
       progress: 24,
       completed: false,
     },
@@ -59,7 +59,7 @@ export default function Quest() {
       id: 6,
       title: 'Diamond Hands',
       description: 'Hold a prediction for 30 days',
-      reward: '75 BNB',
+      reward: '75 PEW',
       progress: 0,
       completed: false,
     },
@@ -72,7 +72,7 @@ export default function Quest() {
         <div className="py-4 px-2">
           <div className="flex justify-between items-center mb-2">
             <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
-              Quests
+              PewPew
             </h1>
             <ConnectButton 
               accountStatus="avatar"
@@ -116,7 +116,7 @@ export default function Quest() {
                   <div className="text-right">
                     <p className="text-gray-400 text-sm mb-1">Total Rewards</p>
                     <p className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
-                      {quests.filter(q => q.completed).reduce((acc, q) => acc + parseFloat(q.reward), 0)} BNB
+                      {quests.filter(q => q.completed).reduce((acc, q) => acc + parseFloat(q.reward), 0)} PEW
                     </p>
                   </div>
                 </div>
@@ -222,32 +222,32 @@ export default function Quest() {
       </div>
 
       {/* Bottom Navigation - Fixed */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-dark-bg via-dark-bg to-transparent">
+      <div className="fixed bottom-0 left-0 right-0 pb-2 px-4 bg-gradient-to-t from-dark-bg via-dark-bg to-transparent">
         <div className="w-full max-w-md mx-auto">
-          <div className="bg-dark-card/90 backdrop-blur-lg rounded-3xl border border-gray-800 px-2 py-2">
-            <div className="flex justify-around items-center">
+          <div className="bg-dark-card/90 backdrop-blur-lg rounded-2xl border border-gray-800">
+            <div className="flex justify-around items-center py-2">
               {/* Profile */}
-              <Link href="/profile" className="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl transition-all hover:bg-gray-800/50">
-                <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <Link href="/profile" className="flex flex-col items-center gap-0.5 py-2 px-3 rounded-xl transition-all hover:bg-gray-800/50">
+                <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
-                <span className="text-xs text-gray-400 font-medium">Profile</span>
+                <span className="text-[10px] text-gray-400 font-medium">Profile</span>
               </Link>
 
               {/* Predict */}
-              <Link href="/" className="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl transition-all hover:bg-gray-800/50">
-                <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <Link href="/" className="flex flex-col items-center gap-0.5 py-2 px-3 rounded-xl transition-all hover:bg-gray-800/50">
+                <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                 </svg>
-                <span className="text-xs text-gray-400 font-medium">Predict</span>
+                <span className="text-[10px] text-gray-400 font-medium">Predict</span>
               </Link>
 
               {/* Quest - Active */}
-              <Link href="/quest" className="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl bg-gradient-to-r from-purple-600/30 to-pink-600/30 border border-purple-500/50">
-                <svg className="w-6 h-6 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <Link href="/quest" className="flex flex-col items-center gap-0.5 py-2 px-3 rounded-xl bg-gradient-to-r from-purple-600/30 to-pink-600/30 border border-purple-500/50">
+                <svg className="w-5 h-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
                 </svg>
-                <span className="text-xs text-purple-400 font-semibold">Quest</span>
+                <span className="text-[10px] text-purple-400 font-semibold">Quest</span>
               </Link>
             </div>
           </div>

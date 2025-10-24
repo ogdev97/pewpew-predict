@@ -36,3 +36,12 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Hardhat files
+cache/
+artifacts/
+typechain-types/
+
+# Hardhat/Smart Contract
+.openzeppelin/
+deployments/
+
