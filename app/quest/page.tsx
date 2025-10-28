@@ -19,7 +19,7 @@ export default function Quest() {
       id: 1,
       title: 'First Prediction',
       description: 'Make your first prediction on any market',
-      reward: '10 PEW',
+      reward: '10 Guru',
       progress: 100,
       completed: true,
     },
@@ -27,15 +27,15 @@ export default function Quest() {
       id: 2,
       title: 'Hot Streak',
       description: 'Win 5 predictions in a row',
-      reward: '25 PEW',
+      reward: '25 Guru',
       progress: 60,
       completed: false,
     },
     {
       id: 3,
       title: 'Volume Trader',
-      description: 'Trade a total volume of 100 PEW',
-      reward: '50 PEW',
+      description: 'Trade a total volume of 100 Guru',
+      reward: '50 Guru',
       progress: 45,
       completed: false,
     },
@@ -43,7 +43,7 @@ export default function Quest() {
       id: 4,
       title: 'Early Adopter',
       description: 'Connect wallet and explore all features',
-      reward: '5 PEW',
+      reward: '5 Guru',
       progress: 100,
       completed: true,
     },
@@ -51,7 +51,7 @@ export default function Quest() {
       id: 5,
       title: 'Market Master',
       description: 'Predict on 50 different markets',
-      reward: '100 PEW',
+      reward: '100 Guru',
       progress: 24,
       completed: false,
     },
@@ -59,7 +59,7 @@ export default function Quest() {
       id: 6,
       title: 'Diamond Hands',
       description: 'Hold a prediction for 30 days',
-      reward: '75 PEW',
+      reward: '75 Guru',
       progress: 0,
       completed: false,
     },
@@ -72,7 +72,7 @@ export default function Quest() {
         <div className="py-4 px-2">
           <div className="flex justify-between items-center mb-2">
             <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
-              PewPew
+            GoalGuru
             </h1>
             <ConnectButton 
               accountStatus="avatar"
@@ -116,7 +116,7 @@ export default function Quest() {
                   <div className="text-right">
                     <p className="text-gray-400 text-sm mb-1">Total Rewards</p>
                     <p className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
-                      {quests.filter(q => q.completed).reduce((acc, q) => acc + parseFloat(q.reward), 0)} PEW
+                      {quests.filter(q => q.completed).reduce((acc, q) => acc + parseFloat(q.reward), 0)} Guru
                     </p>
                   </div>
                 </div>

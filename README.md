@@ -1,4 +1,4 @@
-# PewPew - Tinder-like Prediction Market DApp
+# GoalGuru - Tinder-like Prediction Market DApp
 
 A mobile-first prediction market dApp with Tinder-style swipe mechanics. Swipe right to predict YES, swipe left to predict NO.
 
@@ -60,7 +60,7 @@ yarn start
 ## Project Structure
 
 ```
-bnb-predict-app/
+GoalGuru-predict-app/
 ├── app/
 │   ├── components/
 │   │   └── SwipeCards.tsx    # Main swipe card component
@@ -75,7 +75,7 @@ bnb-predict-app/
 
 ## Customization
 
-- **Prediction Markets**: Edit the `predictions` array in `app/components/SwipeCards.tsx`
+- **Prediction Markets**: Edit the `predictions` array in `app/predictions.config.ts`.
 - **Theme Colors**: Modify `tailwind.config.ts`
 - **Chains**: Update chains in `app/wagmi.ts`
 

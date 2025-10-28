@@ -1,49 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, useMotionValue, useTransform } from 'framer-motion';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
 import { parseEther } from 'viem';
 import { PREDICTION_MARKET_ABI } from '../contracts/abi';
 import { PREDICTION_MARKET_ADDRESS, DEFAULT_BET_AMOUNT } from '../contracts/config';
-
-// Sample prediction markets
-const predictions = [
-  {
-    id: 1,
-    question: 'Will BNB reach $2000 by end of 2025?',
-    image: 'https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=800&h=1200&fit=crop',
-    yesOdds: '65%',
-    noOdds: '35%',
-  },
-  {
-    id: 2,
-    question: 'Will PolyMarket announce TGE?',
-    image: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=800&h=1200&fit=crop',
-    yesOdds: '72%',
-    noOdds: '28%',
-  },
-  {
-    id: 3,
-    question: 'Will Ethereum merge to PoS succeed?',
-    image: 'https://images.unsplash.com/photo-1622630998477-20aa696ecb05?w=800&h=1200&fit=crop',
-    yesOdds: '88%',
-    noOdds: '12%',
-  },
-  {
-    id: 4,
-    question: 'Will DeFi TVL exceed $200B this year?',
-    image: 'https://images.unsplash.com/photo-1642104704074-907c0698cbd9?w=800&h=1200&fit=crop',
-    yesOdds: '54%',
-    noOdds: '46%',
-  },
-];
+import { getMarketsForMatchweek, getTotalMatchweeks, type PredictionMarket } from '../contracts/predictions.config';
 
 export function SwipeCards() {
-  const [cards, setCards] = useState(predictions);
+  const [selectedMatchweek, setSelectedMatchweek] = useState(1);
+  const [cards, setCards] = useState<PredictionMarket[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [betAmount, setBetAmount] = useState(DEFAULT_BET_AMOUNT);
   const [isPredicting, setIsPredicting] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   
   const { address, isConnected } = useAccount();
   const { writeContract, data: hash, error, isPending } = useWriteContract();
@@ -53,6 +25,51 @@ export function SwipeCards() {
   });
 
   const currentCard = cards[currentIndex];
+
+  // Load matchweek from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('selectedMatchweek');
+    if (saved) {
+      setSelectedMatchweek(parseInt(saved));
+    }
+  }, []);
+
+  // Load bet amount from localStorage on mount
+  useEffect(() => {
+    const savedBetAmount = localStorage.getItem('defaultBetAmount');
+    if (savedBetAmount) {
+      setBetAmount(savedBetAmount);
+    }
+  }, []);
+
+  // Load markets for selected matchweek
+  useEffect(() => {
+    const markets = getMarketsForMatchweek(selectedMatchweek);
+    setCards(markets);
+    setCurrentIndex(0); // Reset to first card when matchweek changes
+  }, [selectedMatchweek]);
+
+  // Save matchweek to localStorage when changed
+  useEffect(() => {
+    localStorage.setItem('selectedMatchweek', selectedMatchweek.toString());
+  }, [selectedMatchweek]);
+
+  // Click-outside handler for dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
 
   // Move to next card only when transaction is successful
   useEffect(() => {
@@ -138,23 +155,68 @@ export function SwipeCards() {
 
   return (
     <div className="relative w-full max-w-sm">
-      {/* Market Counter Indicator */}
-      <div className="mb-1 px-4">
-        <div className="flex items-center justify-center gap-1">
-          <div className="text-xs text-gray-400">
-            Market {currentIndex + 1} of {cards.length}
+      {/* Market Counter and Matchweek Dropdown */}
+      <div className="mb-1">
+        <div className="flex items-center justify-between gap-3">
+          {/* Matchweek Dropdown - Left Side */}
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-dark-card/80 backdrop-blur-sm border border-gray-700 rounded-lg hover:border-purple-500/50 transition-all"
+            >
+              <span className="text-xs font-medium text-gray-300">
+                Matchweek {selectedMatchweek}
+              </span>
+              <svg 
+                className={`w-3.5 h-3.5 text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {/* Dropdown Menu */}
+            {isDropdownOpen && (
+              <div className="absolute top-full left-0 mt-1 w-32 bg-dark-card/95 backdrop-blur-lg border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden">
+                {Array.from({ length: getTotalMatchweeks() }, (_, i) => i + 1).map((week) => (
+                  <button
+                    key={week}
+                    onClick={() => {
+                      setSelectedMatchweek(week);
+                      setIsDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-xs transition-colors ${
+                      selectedMatchweek === week
+                        ? 'bg-gradient-to-r from-purple-600/30 to-pink-600/30 text-purple-300 font-semibold'
+                        : 'text-gray-300 hover:bg-gray-800/50'
+                    }`}
+                  >
+                    Matchweek {week}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-          <div className="flex gap-1">
-            {cards.map((_, index) => (
-              <div
-                key={index}
-                className={`h-1.5 rounded-full transition-all ${
-                  index === currentIndex 
-                    ? 'w-6 bg-gradient-to-r from-purple-500 to-pink-500' 
-                    : 'w-1.5 bg-gray-700'
-                }`}
-              />
-            ))}
+
+          {/* Market Counter - Right Side */}
+          <div className="flex items-center gap-1">
+            <div className="text-xs text-gray-400">
+              Market {currentIndex + 1} of {cards.length}
+            </div>
+            <div className="flex gap-1">
+              {cards.map((_, index) => (
+                <div
+                  key={index}
+                  className={`h-1.5 rounded-full transition-all ${
+                    index === currentIndex 
+                      ? 'w-6 bg-gradient-to-r from-purple-500 to-pink-500' 
+                      : 'w-1.5 bg-gray-700'
+                  }`}
+                />
+              ))}
+            </div>
           </div>
         </div>
         
@@ -258,7 +320,7 @@ function SwipeCard({
   onSkip,
   isDisabled 
 }: { 
-  card: typeof predictions[0]; 
+  card: PredictionMarket; 
   onSwipe: (direction: 'left' | 'right') => void;
   onSkip: (direction: 'up' | 'down') => void;
   isDisabled?: boolean;

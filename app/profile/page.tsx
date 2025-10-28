@@ -3,12 +3,47 @@
 import Link from 'next/link';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount, useBalance } from 'wagmi';
+import { useState, useEffect } from 'react';
+import { DEFAULT_BET_AMOUNT } from '../contracts/config';
 
 export default function Profile() {
   const { address, isConnected } = useAccount();
   const { data: balance } = useBalance({
     address: address,
   });
+
+  const [defaultBetAmount, setDefaultBetAmount] = useState(DEFAULT_BET_AMOUNT);
+  const [customAmount, setCustomAmount] = useState('');
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  const presetAmounts = ['0.001', '0.005', '0.01', '0.05', '0.1'];
+
+  // Load saved bet amount from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('defaultBetAmount');
+    if (saved) {
+      setDefaultBetAmount(saved);
+    }
+  }, []);
+
+  const handleSetBetAmount = (amount: string) => {
+    setDefaultBetAmount(amount);
+    localStorage.setItem('defaultBetAmount', amount);
+    setCustomAmount('');
+    
+    // Show success message
+    setShowSuccess(true);
+    setTimeout(() => setShowSuccess(false), 2000);
+  };
+
+  const handleCustomAmountSubmit = () => {
+    const amount = parseFloat(customAmount);
+    if (amount > 0 && amount <= 1) {
+      handleSetBetAmount(customAmount);
+    } else {
+      alert('Please enter a valid amount between 0 and 1 BNB');
+    }
+  };
 
   const formatAddress = (addr: string) => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
@@ -21,7 +56,7 @@ export default function Profile() {
         <div className="py-4 px-2">
           <div className="flex justify-between items-center mb-2">
             <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
-              Profile
+              GoalGuru
             </h1>
             <ConnectButton 
               accountStatus="avatar"
@@ -79,42 +114,85 @@ export default function Profile() {
                 </div>
               </div>
 
-              {/* Recent Activity */}
-              <div className="bg-dark-card/50 backdrop-blur-sm border border-gray-800 rounded-3xl p-6">
-                <h3 className="text-lg font-bold text-white mb-4">Recent Activity</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 pb-3 border-b border-gray-800">
-                    <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                      <span className="text-green-400 font-bold text-sm">YES</span>
+              {/* Bet Amount Settings Card */}
+              <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-sm border border-purple-500/20 rounded-3xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <svg className="w-5 h-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Default Bet Amount
+                  </h3>
+                  {showSuccess && (
+                    <div className="flex items-center gap-1 text-green-400 text-sm animate-fade-in">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Saved!
                     </div>
-                    <div className="flex-1">
-                      <p className="text-white text-sm font-medium">BNB will reach $2000</p>
-                      <p className="text-gray-500 text-xs">2 hours ago</p>
-                    </div>
-                    <span className="text-green-400 text-sm font-semibold">+2.3 BNB</span>
-                  </div>
-                  <div className="flex items-center gap-3 pb-3 border-b border-gray-800">
-                    <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
-                      <span className="text-red-400 font-bold text-sm">NO</span>
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-white text-sm font-medium">Bitcoin ETF approval</p>
-                      <p className="text-gray-500 text-xs">5 hours ago</p>
-                    </div>
-                    <span className="text-red-400 text-sm font-semibold">-1.5 BNB</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                      <span className="text-green-400 font-bold text-sm">YES</span>
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-white text-sm font-medium">DeFi TVL exceed $200B</p>
-                      <p className="text-gray-500 text-xs">1 day ago</p>
-                    </div>
-                    <span className="text-green-400 text-sm font-semibold">+3.7 BNB</span>
+                  )}
+                </div>
+
+                {/* Current Default */}
+                <div className="bg-black/30 rounded-2xl p-4 mb-4 text-center">
+                  <p className="text-xs text-gray-400 mb-1">Current Default</p>
+                  <p className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                    {defaultBetAmount} BNB
+                  </p>
+                </div>
+
+                {/* Preset Amounts */}
+                <div className="mb-4">
+                  <p className="text-sm text-gray-300 mb-3 font-medium">Quick Select</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {presetAmounts.map((amount) => (
+                      <button
+                        key={amount}
+                        onClick={() => handleSetBetAmount(amount)}
+                        className={`py-3 px-4 rounded-xl text-sm font-semibold transition-all ${
+                          defaultBetAmount === amount
+                            ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/50'
+                            : 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50 border border-gray-700'
+                        }`}
+                      >
+                        {amount}
+                      </button>
+                    ))}
                   </div>
                 </div>
+
+                {/* Custom Amount Input */}
+                <div>
+                  <p className="text-sm text-gray-300 mb-3 font-medium">Custom Amount</p>
+                  <div className="flex gap-2">
+                    <div className="flex-1 relative">
+                      <input
+                        type="number"
+                        value={customAmount}
+                        onChange={(e) => setCustomAmount(e.target.value)}
+                        placeholder="0.000"
+                        step="0.001"
+                        min="0"
+                        max="1"
+                        className="w-full bg-gray-800/50 border border-gray-700 rounded-xl pl-4 pr-16 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">
+                        BNB
+                      </span>
+                    </div>
+                    <button
+                      onClick={handleCustomAmountSubmit}
+                      disabled={!customAmount || parseFloat(customAmount) <= 0}
+                      className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-purple-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Set
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">Enter amount between 0 and 1 BNB</p>
+                </div>
               </div>
+
             </div>
           ) : (
             <div className="flex items-center justify-center py-20">
