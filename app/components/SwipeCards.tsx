@@ -341,8 +341,23 @@ function SwipeCard({
   // Extract endTimestamp from marketData
   const endTimestamp = marketData ? Number(marketData[2]) : 0; // marketData[2] is endTimestamp
 
+  // Countdown timer state
+  const [timeRemaining, setTimeRemaining] = useState<string>('');
+  const [isMarketEnded, setIsMarketEnded] = useState(false);
+
+  // Auto-skip ended markets
+  useEffect(() => {
+    if (isMarketEnded && !isDisabled) {
+      console.log(`Market #${card.id} has ended, auto-skipping...`);
+      const timer = setTimeout(() => {
+        onSkip('up'); // Automatically skip to next card
+      }, 1500); // Wait 1.5s to show "Ended" message
+      return () => clearTimeout(timer);
+    }
+  }, [isMarketEnded, card.id, onSkip, isDisabled]);
+
   const handleDragEnd = (event: any, info: any) => {
-    if (isDisabled) {
+    if (isDisabled || isMarketEnded) {
       return;
     }
     
@@ -360,12 +375,10 @@ function SwipeCard({
     }
   };
 
-  // Countdown timer state
-  const [timeRemaining, setTimeRemaining] = useState<string>('');
-
   useEffect(() => {
     if (!endTimestamp || endTimestamp === 0) {
       setTimeRemaining('Loading...');
+      setIsMarketEnded(false);
       return;
     }
 
@@ -375,9 +388,11 @@ function SwipeCard({
 
       if (remaining <= 0) {
         setTimeRemaining('Ended');
+        setIsMarketEnded(true);
         return;
       }
 
+      setIsMarketEnded(false);
       const days = Math.floor(remaining / 86400);
       const hours = Math.floor((remaining % 86400) / 3600);
       const minutes = Math.floor((remaining % 3600) / 60);
@@ -407,14 +422,24 @@ function SwipeCard({
 
   return (
     <motion.div
-      className={`w-full h-full ${isDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-grab active:cursor-grabbing'}`}
+      className={`w-full h-full ${isDisabled || isMarketEnded ? 'cursor-not-allowed opacity-60' : 'cursor-grab active:cursor-grabbing'}`}
       style={{ x, y, rotate }}
-      drag={isDisabled ? false : true}
+      drag={isDisabled || isMarketEnded ? false : true}
       dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
       onDragEnd={handleDragEnd}
-      whileTap={{ cursor: isDisabled ? 'not-allowed' : 'grabbing' }}
+      whileTap={{ cursor: isDisabled || isMarketEnded ? 'not-allowed' : 'grabbing' }}
     >
       <div className="relative w-full h-full rounded-3xl overflow-hidden shadow-2xl border border-gray-700/50">
+        {/* Market Ended Overlay */}
+        {isMarketEnded && (
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="text-center">
+              <div className="text-5xl font-bold text-red-400 mb-2">ENDED</div>
+              <div className="text-sm text-gray-400">Skipping to next market...</div>
+            </div>
+          </div>
+        )}
+
         {/* Background Image */}
         <div 
           className="absolute inset-0 bg-cover bg-center"
@@ -464,12 +489,16 @@ function SwipeCard({
           <div className="space-y-3">
             {/* Countdown Timer */}
             <div className="flex justify-center">
-              <div className="bg-black/40 backdrop-blur-md border border-gray-500/30 rounded-2xl px-4 py-2">
+              <div className={`backdrop-blur-md border rounded-2xl px-4 py-2 ${
+                isMarketEnded 
+                  ? 'bg-red-500/40 border-red-500/50' 
+                  : 'bg-black/40 border-gray-500/30'
+              }`}>
                 <div className="flex items-center gap-2">
                   <svg className="w-4 h-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span className="text-sm font-bold text-white">
+                  <span className={`text-sm font-bold ${isMarketEnded ? 'text-red-300' : 'text-white'}`}>
                     {timeRemaining}
                   </span>
                 </div>

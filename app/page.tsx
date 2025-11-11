@@ -1,15 +1,18 @@
 'use client';
 
 import Link from 'next/link';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { AuthButton } from './components/AuthButton';
+import { AuthErrorToast } from './components/AuthErrorToast';
 import { SwipeCards } from './components/SwipeCards';
 import { useAccount, useBalance } from 'wagmi';
+import { useAuth } from './contexts/AuthContext';
 
 export default function Home() {
   const { address, isConnected } = useAccount();
   const { data: balance } = useBalance({
     address: address,
   });
+  const { isAuthenticated } = useAuth();
 
   const formatAddress = (addr: string) => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
@@ -17,6 +20,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen w-full p-4 md:p-8 pb-24">
+      <AuthErrorToast />
       <div className="w-full max-w-md mx-auto">
         {/* Header */}
         <div className="py-4 px-2">
@@ -24,11 +28,7 @@ export default function Home() {
             <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
             GoalGuru
             </h1>
-            <ConnectButton 
-              accountStatus="avatar"
-              chainStatus="icon"
-              showBalance={false}
-            />
+            <AuthButton />
           </div>
           
           {/* Wallet Info - Show when connected */}

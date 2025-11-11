@@ -1,7 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react'
 import Link from 'next/link';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { AuthButton } from '../components/AuthButton';
+import { AuthErrorToast } from '../components/AuthErrorToast';
 import { useAccount, useBalance } from 'wagmi';
 import { supabase } from '../utils/supabase'
 
@@ -52,6 +53,7 @@ export default function Quest() {
 
   return (
     <main className="min-h-screen w-full p-4 md:p-8 pb-40">
+      <AuthErrorToast />
       <div className="w-full max-w-md mx-auto">
         {/* Header */}
         <div className="py-4 px-2">
@@ -59,11 +61,7 @@ export default function Quest() {
             <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
             GoalGuru
             </h1>
-            <ConnectButton 
-              accountStatus="avatar"
-              chainStatus="icon"
-              showBalance={false}
-            />
+            <AuthButton />
           </div>
           
           {/* Wallet Info - Show when connected */}
