@@ -1,8 +1,18 @@
 'use client';
-
+import { useState, useEffect } from 'react'
 import Link from 'next/link';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount, useBalance } from 'wagmi';
+import { supabase } from '../utils/supabase'
+
+interface Quest {
+  id: number;
+  title: string;
+  description: string;
+  reward: string;
+  progress: number;
+  completed: boolean;
+}
 
 export default function Quest() {
   const { address, isConnected } = useAccount();
@@ -10,60 +20,35 @@ export default function Quest() {
     address: address,
   });
 
+  const [quests, setQuests] = useState<Quest[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const formatAddress = (addr: string) => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
 
-  const quests = [
-    {
-      id: 1,
-      title: 'First Prediction',
-      description: 'Make your first prediction on any market',
-      reward: '10 Guru',
-      progress: 100,
-      completed: true,
-    },
-    {
-      id: 2,
-      title: 'Hot Streak',
-      description: 'Win 5 predictions in a row',
-      reward: '25 Guru',
-      progress: 60,
-      completed: false,
-    },
-    {
-      id: 3,
-      title: 'Volume Trader',
-      description: 'Trade a total volume of 100 Guru',
-      reward: '50 Guru',
-      progress: 45,
-      completed: false,
-    },
-    {
-      id: 4,
-      title: 'Early Adopter',
-      description: 'Connect wallet and explore all features',
-      reward: '5 Guru',
-      progress: 100,
-      completed: true,
-    },
-    {
-      id: 5,
-      title: 'Market Master',
-      description: 'Predict on 50 different markets',
-      reward: '100 Guru',
-      progress: 24,
-      completed: false,
-    },
-    {
-      id: 6,
-      title: 'Diamond Hands',
-      description: 'Hold a prediction for 30 days',
-      reward: '75 Guru',
-      progress: 0,
-      completed: false,
-    },
-  ];
+  // Fetch quests from Supabase
+  useEffect(() => {
+    const fetchQuests = async () => {
+      try {
+        setLoading(true);
+        
+        const { data, error } = await supabase
+          .from('quests')
+          .select('*')
+          .order('id', { ascending: true });
+
+          setQuests(data || []);
+        
+      } catch (error) {
+        console.error('Caught error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchQuests();
+  }, []);
 
   return (
     <main className="min-h-screen w-full p-4 md:p-8 pb-40">
@@ -104,27 +89,41 @@ export default function Quest() {
         <div className="px-2">
           {isConnected ? (
             <div className="space-y-4 pb-8 mb-8">
-              {/* Stats Card */}
-              <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-sm border border-purple-500/20 rounded-3xl p-6">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="text-gray-400 text-sm mb-1">Quests Completed</p>
-                    <p className="text-3xl font-bold text-white">
-                      {quests.filter(q => q.completed).length}/{quests.length}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-gray-400 text-sm mb-1">Total Rewards</p>
-                    <p className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
-                      {quests.filter(q => q.completed).reduce((acc, q) => acc + parseFloat(q.reward), 0)} Guru
-                    </p>
+              {loading ? (
+                <div className="flex items-center justify-center py-20">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+                    <p className="text-gray-400">Loading quests...</p>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <>
+                  {/* Stats Card */}
+                  <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-sm border border-purple-500/20 rounded-3xl p-6">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="text-gray-400 text-sm mb-1">Quests Completed</p>
+                        <p className="text-3xl font-bold text-white">
+                          {quests.filter(q => q.completed).length}/{quests.length}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-gray-400 text-sm mb-1">Total Rewards</p>
+                        <p className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
+                          {quests.filter(q => q.completed).reduce((acc, q) => acc + parseFloat(q.reward), 0)} Guru
+                        </p>
+                      </div>
+                    </div>
+                  </div>
 
-              {/* Quest List */}
-              <div className="space-y-3">
-                {quests.map((quest) => (
+                  {/* Quest List */}
+                  <div className="space-y-3">
+                    {quests.length === 0 ? (
+                      <div className="text-center py-10">
+                        <p className="text-gray-400">No quests available yet.</p>
+                      </div>
+                    ) : (
+                      quests.map((quest) => (
                   <div
                     key={quest.id}
                     className={`rounded-3xl p-5 border ${
@@ -182,7 +181,7 @@ export default function Quest() {
                             <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
                               <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
                             </svg>
-                            <span className="text-yellow-400 font-bold text-sm">{quest.reward}</span>
+                            <span className="text-yellow-400 font-bold text-sm">{quest.reward} Guru </span>
                           </div>
                           {quest.completed ? (
                             <span className="text-green-400 text-xs font-semibold px-3 py-1 bg-green-500/20 rounded-full">
@@ -203,9 +202,12 @@ export default function Quest() {
                         </div>
                       </div>
                     </div>
+                      </div>
+                    ))
+                    )}
                   </div>
-                ))}
-              </div>
+                </>
+              )}
             </div>
           ) : (
             <div className="flex items-center justify-center py-20">
