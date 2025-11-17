@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { AuthButton } from './components/AuthButton';
 import { AuthErrorToast } from './components/AuthErrorToast';
 import { SwipeCards } from './components/SwipeCards';
@@ -25,9 +26,13 @@ export default function Home() {
         {/* Header */}
         <div className="py-4 px-2">
           <div className="flex justify-between items-center mb-2">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
-            GoalGuru
-            </h1>
+            <Image 
+              src="/goalguru.png" 
+              alt="GoalGuru" 
+              width={50} 
+              height={20}
+              className="object-contain"
+            />
             <AuthButton />
           </div>
           
