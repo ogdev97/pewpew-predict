@@ -32,7 +32,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { address, isConnected, connector } = useAccount();
   const { signMessageAsync } = useSignMessage();
-  
+
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -45,10 +45,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const checkAndRestoreSession = async () => {
       const existingSession = getSession();
-      
+
       if (existingSession && isSessionValid()) {
         // Validate session exists in Supabase
-        const { data: dbSession } = await supabase
+        const { data: dbSession, error } = await supabase
           .from('login_sessions')
           .select('*')
           .eq('nonce', existingSession.nonce)
@@ -61,12 +61,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setSession(existingSession);
           setUserId(existingSession.userId);
           setIsAuthenticated(true);
+          setHasAttemptedLogin(true);
         } else {
           // Session not found in DB or expired, clear it
           clearSession();
         }
+      } else {
       }
-      
+
       setHasCheckedSession(true);
     };
 
@@ -76,9 +78,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Handle wallet connection and authentication
   useEffect(() => {
     if (!hasCheckedSession || !isConnected || !address) return;
-    
+
     const addressLower = address.toLowerCase();
-    
+
     // Already authenticated for this wallet
     if (isAuthenticated && session?.walletAddress === addressLower) {
       return;
@@ -86,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Check if there's a valid session for this specific wallet
     const existingSession = getSession();
-    
+
     if (existingSession && existingSession.walletAddress === addressLower && isSessionValid()) {
       // Restore session for this wallet
       setSession(existingSession);
@@ -99,10 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Need to login - but only if we haven't tried yet and not already authenticating
     if (!hasAttemptedLogin && !isAuthenticating) {
       setHasAttemptedLogin(true);
-      const timer = setTimeout(() => {
-        login();
-      }, 500);
-      return () => clearTimeout(timer);
+      login();
     }
   }, [isConnected, address, hasCheckedSession, isAuthenticated, isAuthenticating, hasAttemptedLogin, session?.walletAddress]);
 
@@ -129,7 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Check if there's a valid session
   const checkAuth = () => {
     const existingSession = getSession();
-    
+
     if (existingSession && isSessionValid()) {
       setSession(existingSession);
       setUserId(existingSession.userId);
@@ -171,16 +170,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       // Generate nonce
       const nonce = generateNonce();
-      
+
       // Generate SIWE message
       const message = generateSiweMessage(address, nonce);
-      
+
       // Request signature from user
       const signature = await signMessageAsync({ message });
-      
+
       // Verify signature (client-side check)
       const isValid = await verifySiweSignature(message, signature, address);
-      
+
       if (!isValid) {
         throw new Error('Invalid signature');
       }
@@ -218,7 +217,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Create session in database
       const expiresAt = new Date(Date.now() + SESSION_DURATION);
-      
+
       const { data: sessionData, error: sessionError } = await supabase
         .from('login_sessions')
         .insert({
@@ -259,12 +258,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(newSession);
       setUserId(user.id);
       setIsAuthenticated(true);
-      
+
     } catch (error: any) {
-      
+
       if (error.message?.includes('User rejected') || error.message?.includes('rejected')) {
         setAuthError('Signature request was rejected. Please try again.');
-        
+
         // Disconnect wallet after rejection
         try {
           await connector?.disconnect();
@@ -274,12 +273,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setAuthError('Authentication failed. Please try again.');
       }
-      
+
       setIsAuthenticated(false);
       setSession(null);
       setUserId(null);
       setHasAttemptedLogin(false); // Reset so they can try again
-      
+
       // Auto-clear error after 5 seconds
       setTimeout(() => {
         setAuthError(null);
