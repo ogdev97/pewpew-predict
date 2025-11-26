@@ -6,7 +6,17 @@ import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadCont
 import { parseEther } from 'viem';
 import { PREDICTION_MARKET_ABI } from '../contracts/abi';
 import { PREDICTION_MARKET_ADDRESS, DEFAULT_BET_AMOUNT } from '../contracts/config';
-import { getMarketsForMatchweek, getTotalMatchweeks, type PredictionMarket } from '../contracts/predictions.config';
+import { supabase } from '../utils/supabase';
+
+// Define the interface based on Supabase schema
+interface PredictionMarket {
+  id: number;
+  question: string;
+  image: string;
+  yesOdds: string; // Mapped from yes_odds
+  noOdds: string;  // Mapped from no_odds
+  matchweek: number;
+}
 
 export function SwipeCards() {
   const [selectedMatchweek, setSelectedMatchweek] = useState(1);
@@ -15,11 +25,13 @@ export function SwipeCards() {
   const [betAmount, setBetAmount] = useState(DEFAULT_BET_AMOUNT);
   const [isPredicting, setIsPredicting] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [totalMatchweeks, setTotalMatchweeks] = useState(5); // Default to 5, or fetch dynamically
   const dropdownRef = useRef<HTMLDivElement>(null);
-  
+
   const { address, isConnected } = useAccount();
   const { writeContract, data: hash, error, isPending } = useWriteContract();
-  
+
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
   });
@@ -42,11 +54,59 @@ export function SwipeCards() {
     }
   }, []);
 
-  // Load markets for selected matchweek
+  // Fetch total matchweeks (optional, but good for dynamic dropdown)
   useEffect(() => {
-    const markets = getMarketsForMatchweek(selectedMatchweek);
-    setCards(markets);
-    setCurrentIndex(0); // Reset to first card when matchweek changes
+    const fetchTotalMatchweeks = async () => {
+      const { data, error } = await supabase
+        .from('markets')
+        .select('matchweek')
+        .order('matchweek', { ascending: false })
+        .limit(1);
+
+      if (data && data.length > 0) {
+        setTotalMatchweeks(data[0].matchweek);
+      }
+    };
+    fetchTotalMatchweeks();
+  }, []);
+
+  // Load markets for selected matchweek from Supabase
+  useEffect(() => {
+    const fetchMarkets = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('markets')
+          .select('*')
+          .eq('matchweek', selectedMatchweek)
+          .order('id', { ascending: true });
+
+        if (error) {
+          console.error('Error fetching markets:', error);
+          return;
+        }
+
+        if (data) {
+          // Map database columns to component interface
+          const mappedMarkets: PredictionMarket[] = data.map(m => ({
+            id: m.id,
+            question: m.question,
+            image: m.image,
+            yesOdds: m.yes_odds,
+            noOdds: m.no_odds,
+            matchweek: m.matchweek
+          }));
+          setCards(mappedMarkets);
+          setCurrentIndex(0);
+        }
+      } catch (err) {
+        console.error('Unexpected error fetching markets:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMarkets();
   }, [selectedMatchweek]);
 
   // Save matchweek to localStorage when changed
@@ -107,10 +167,10 @@ export function SwipeCards() {
 
     const outcome = direction === 'right' ? 1 : 2; // 1 = YES, 2 = NO
     const prediction = direction === 'right' ? 'YES' : 'NO';
-    
+
     try {
       setIsPredicting(true);
-      
+
       // Call the predict function on the smart contract
       writeContract({
         address: PREDICTION_MARKET_ADDRESS,
@@ -121,7 +181,7 @@ export function SwipeCards() {
       });
 
       console.log(`🎯 Predicting ${prediction} on Market #${currentCard.id} with ${betAmount} BNB`);
-      
+
     } catch (err) {
       console.error('Error placing prediction:', err);
       setIsPredicting(false);
@@ -151,6 +211,22 @@ export function SwipeCards() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[480px] w-full max-w-sm">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
+      </div>
+    );
+  }
+
+  if (!currentCard && !loading) {
+    return (
+      <div className="flex items-center justify-center h-[480px] w-full max-w-sm text-gray-400">
+        No markets found for this matchweek.
+      </div>
+    );
+  }
+
   if (!currentCard) return null;
 
   return (
@@ -167,10 +243,10 @@ export function SwipeCards() {
               <span className="text-xs font-medium text-gray-300">
                 Matchweek {selectedMatchweek}
               </span>
-              <svg 
+              <svg
                 className={`w-3.5 h-3.5 text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
-                fill="none" 
-                viewBox="0 0 24 24" 
+                fill="none"
+                viewBox="0 0 24 24"
                 stroke="currentColor"
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -179,19 +255,18 @@ export function SwipeCards() {
 
             {/* Dropdown Menu */}
             {isDropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 w-32 bg-dark-card/95 backdrop-blur-lg border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden">
-                {Array.from({ length: getTotalMatchweeks() }, (_, i) => i + 1).map((week) => (
+              <div className="absolute top-full left-0 mt-1 w-32 bg-dark-card/95 backdrop-blur-lg border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden max-h-60 overflow-y-auto">
+                {Array.from({ length: totalMatchweeks }, (_, i) => i + 1).map((week) => (
                   <button
                     key={week}
                     onClick={() => {
                       setSelectedMatchweek(week);
                       setIsDropdownOpen(false);
                     }}
-                    className={`w-full text-left px-3 py-2 text-xs transition-colors ${
-                      selectedMatchweek === week
-                        ? 'bg-gradient-to-r from-purple-600/30 to-pink-600/30 text-purple-300 font-semibold'
-                        : 'text-gray-300 hover:bg-gray-800/50'
-                    }`}
+                    className={`w-full text-left px-3 py-2 text-xs transition-colors ${selectedMatchweek === week
+                      ? 'bg-gradient-to-r from-purple-600/30 to-pink-600/30 text-purple-300 font-semibold'
+                      : 'text-gray-300 hover:bg-gray-800/50'
+                      }`}
                   >
                     Matchweek {week}
                   </button>
@@ -209,17 +284,16 @@ export function SwipeCards() {
               {cards.map((_, index) => (
                 <div
                   key={index}
-                  className={`h-1.5 rounded-full transition-all ${
-                    index === currentIndex 
-                      ? 'w-6 bg-gradient-to-r from-purple-500 to-pink-500' 
-                      : 'w-1.5 bg-gray-700'
-                  }`}
+                  className={`h-1.5 rounded-full transition-all ${index === currentIndex
+                    ? 'w-6 bg-gradient-to-r from-purple-500 to-pink-500'
+                    : 'w-1.5 bg-gray-700'
+                    }`}
                 />
               ))}
             </div>
           </div>
         </div>
-        
+
         {/* Skip Instructions */}
         <div className="mt-1 text-center">
           <p className="text-xs text-gray-500 flex items-center justify-center gap-1">
@@ -244,8 +318,8 @@ export function SwipeCards() {
             }}
           >
             {index === 0 ? (
-              <SwipeCard 
-                card={card} 
+              <SwipeCard
+                card={card}
                 onSwipe={handleSwipe}
                 onSkip={handleSkip}
                 isDisabled={isPending || isConfirming || isPredicting}
@@ -314,13 +388,13 @@ export function SwipeCards() {
   );
 }
 
-function SwipeCard({ 
-  card, 
+function SwipeCard({
+  card,
   onSwipe,
   onSkip,
-  isDisabled 
-}: { 
-  card: PredictionMarket; 
+  isDisabled
+}: {
+  card: PredictionMarket;
   onSwipe: (direction: 'left' | 'right') => void;
   onSkip: (direction: 'up' | 'down') => void;
   isDisabled?: boolean;
@@ -360,14 +434,14 @@ function SwipeCard({
     if (isDisabled || isMarketEnded) {
       return;
     }
-    
+
     // Check vertical swipe first (skip)
     if (Math.abs(info.offset.y) > Math.abs(info.offset.x) && Math.abs(info.offset.y) > 80) {
       const direction = info.offset.y < 0 ? 'up' : 'down';
       onSkip(direction);
       return;
     }
-    
+
     // Then check horizontal swipe (predict)
     if (Math.abs(info.offset.x) > 100) {
       const direction = info.offset.x > 0 ? 'right' : 'left';
@@ -377,7 +451,7 @@ function SwipeCard({
 
   useEffect(() => {
     if (!endTimestamp || endTimestamp === 0) {
-      setTimeRemaining('Loading...');
+      setTimeRemaining('Not Started');
       setIsMarketEnded(false);
       return;
     }
@@ -441,9 +515,9 @@ function SwipeCard({
         )}
 
         {/* Background Image */}
-        <div 
+        <div
           className="absolute inset-0 bg-cover bg-center"
-          style={{ 
+          style={{
             backgroundImage: `url(${card.image})`,
           }}
         >
@@ -451,7 +525,7 @@ function SwipeCard({
         </div>
 
         {/* YES Overlay */}
-        <motion.div 
+        <motion.div
           className="absolute inset-0 bg-green-500/30 flex items-center justify-center"
           style={{ opacity: yesOverlay }}
         >
@@ -461,7 +535,7 @@ function SwipeCard({
         </motion.div>
 
         {/* NO Overlay */}
-        <motion.div 
+        <motion.div
           className="absolute inset-0 bg-red-500/30 flex items-center justify-center"
           style={{ opacity: noOverlay }}
         >
@@ -471,7 +545,7 @@ function SwipeCard({
         </motion.div>
 
         {/* SKIP Overlay */}
-        <motion.div 
+        <motion.div
           className="absolute inset-0 bg-purple-500/30 flex items-center justify-center"
           style={{ opacity: skipOverlay }}
         >
@@ -489,11 +563,10 @@ function SwipeCard({
           <div className="space-y-3">
             {/* Countdown Timer */}
             <div className="flex justify-center">
-              <div className={`backdrop-blur-md border rounded-2xl px-4 py-2 ${
-                isMarketEnded 
-                  ? 'bg-red-500/40 border-red-500/50' 
-                  : 'bg-black/40 border-gray-500/30'
-              }`}>
+              <div className={`backdrop-blur-md border rounded-2xl px-4 py-2 ${isMarketEnded
+                ? 'bg-red-500/40 border-red-500/50'
+                : 'bg-black/40 border-gray-500/30'
+                }`}>
                 <div className="flex items-center gap-2">
                   <svg className="w-4 h-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -524,11 +597,11 @@ function SwipeCard({
             <div className="inline-block bg-purple-500/20 backdrop-blur-md border border-purple-500/30 rounded-full px-3 py-1">
               <span className="text-xs text-purple-300 font-medium">Market #{card.id}</span>
             </div>
-            
+
             <h2 className="text-2xl font-bold text-white leading-tight">
               {card.question}
             </h2>
-            
+
             {/* Swipe Instructions */}
             <div className="flex justify-between items-center text-sm">
               <div className="flex items-center gap-2 text-red-400">
